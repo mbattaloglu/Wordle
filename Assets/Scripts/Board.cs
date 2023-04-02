@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class Board : MonoBehaviour
@@ -35,6 +36,20 @@ public class Board : MonoBehaviour
 
     [Header("UI References")]
     public TextMeshProUGUI invalidWordText;
+    public Button newWordButton;
+    public Button tryAgainButton;
+
+    private void OnEnable()
+    {
+        tryAgainButton.gameObject.SetActive(false);
+        newWordButton.gameObject.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        tryAgainButton.gameObject.SetActive(true);
+        newWordButton.gameObject.SetActive(true);
+    }
 
     private void Awake()
     {
@@ -79,15 +94,6 @@ public class Board : MonoBehaviour
         }
     }
 
-    private void LoadData()
-    {
-        TextAsset textFile = Resources.Load("official_wordle_all") as TextAsset;
-        validWords = textFile.text.Split('\n');
-
-        textFile = Resources.Load("official_wordle_common") as TextAsset;
-        solutions = textFile.text.Split('\n');
-    }
-
     private void SetRandomWord()
     {
         word = solutions[Random.Range(0, solutions.Length)];
@@ -96,7 +102,7 @@ public class Board : MonoBehaviour
 
     private void SubmitRow(Row row)
     {
-        if(!ValidateWord(row.word))
+        if (!ValidateWord(row.word))
         {
             invalidWordText.gameObject.SetActive(true);
             return;
@@ -141,6 +147,13 @@ public class Board : MonoBehaviour
             }
         }
 
+        if (HasWon(row))
+        {
+            enabled = false;
+            newWordButton.gameObject.SetActive(true);
+            tryAgainButton.gameObject.SetActive(true);
+        }
+
         rowIndex++;
         columnIndex = 0;
 
@@ -161,5 +174,55 @@ public class Board : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool HasWon(Row row)
+    {
+        for (int i = 0; i < row.tiles.Length; i++)
+        {
+            if (row.tiles[i].state != correctState)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void NewGame()
+    {
+        ClearBoard();
+        SetRandomWord();
+        enabled = true;
+    }
+
+    public void TryAgain()
+    {
+        ClearBoard();
+        enabled = true;
+    }
+
+    private void ClearBoard()
+    {
+        for(int row = 0; row < rows.Length; row++)
+        {
+            for(int column = 0; column < rows[row].tiles.Length; column++)
+            {
+                rows[row].tiles[column].SetLetter('\0');
+                rows[row].tiles[column].SetState(emptyState);
+            }
+        }
+
+        rowIndex = 0;
+        columnIndex = 0;
+    }
+
+    private void LoadData()
+    {
+        TextAsset textFile = Resources.Load("official_wordle_all") as TextAsset;
+        validWords = textFile.text.Split('\n');
+
+        textFile = Resources.Load("official_wordle_common") as TextAsset;
+        solutions = textFile.text.Split('\n');
     }
 }
